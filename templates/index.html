@@ -1,0 +1,209 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDoS Detection System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            flex-grow: 1;
+        }
+        
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 40px;
+            justify-content: center;
+        }
+        
+        .action-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            flex: 1;
+            min-width: 250px;
+            max-width: 350px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+        
+        .action-title {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .action-description {
+            font-size: 16px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        
+        .action-button {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+        
+        .system-status {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin: 40px auto;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #27ae60;
+        }
+        
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>DDoS Detection System</h1>
+        <p>Real-time network traffic monitoring and attack detection</p>
+    </div>
+    
+    <div class="container">
+        <div class="system-status">
+            <h2>System Status</h2>
+            <p><span class="status-indicator"></span> Detection engine is active and monitoring traffic</p>
+            <p id="current-rps">Current traffic: Loading...</p>
+        </div>
+        
+        <div class="actions">
+            <div class="action-card">
+                <div class="action-icon">📊</div>
+                <div class="action-title">Traffic Monitor</div>
+                <div class="action-description">
+                    View real-time traffic statistics and detection status in a comprehensive dashboard.
+                </div>
+                <a href="/monitor" class="action-button">Open Dashboard</a>
+            </div>
+            
+            <div class="action-card">
+                <div class="action-icon">🧪</div>
+                <div class="action-title">Test Detection</div>
+                <div class="action-description">
+                    Run a simulated DDoS attack to test the detection capabilities of the system.
+                </div>
+                <a href="javascript:runTest()" class="action-button">Run Test</a>
+            </div>
+            
+            <div class="action-card">
+                <div class="action-icon">📚</div>
+                <div class="action-title">Documentation</div>
+                <div class="action-description">
+                    Learn how the system works, how to customize parameters, and interpret results.
+                </div>
+                <a href="javascript:showDocs()" class="action-button">View Docs</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>DDoS Detection System using LSTM-RNN</p>
+    </div>
+    
+    <script>
+        // Function to update the current RPS
+        function updateRPS() {
+            fetch('/count')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('current-rps').textContent = 
+                        `Current traffic: ${data.rps} requests per second`;
+                })
+                .catch(error => {
+                    console.error('Error fetching RPS:', error);
+                });
+        }
+        
+        // Update RPS every 2 seconds
+        setInterval(updateRPS, 2000);
+        
+        // Initial update
+        updateRPS();
+        
+        // Test function
+        function runTest() {
+            if (confirm('This will generate simulated attack traffic. Continue?')) {
+                fetch('/test-attack', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(`Test started: ${data.message}`);
+                })
+                .catch(error => {
+                    alert('Error starting test: ' + error);
+                });
+            }
+        }
+        
+        // Documentation function
+        function showDocs() {
+            alert('Documentation feature will be available in the next update.');
+        }
+    </script>
+</body>
+</html>
