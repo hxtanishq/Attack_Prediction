@@ -1,0 +1,1 @@
+python test_attack.py --url http://127.0.0.1:5000/predict --normal-rps "1,5" --attack-rps "50,500" --attack-time 30

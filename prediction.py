@@ -23,7 +23,7 @@ class PredictionModel:
         self.history = deque(maxlen=100)
         self.window = deque(maxlen=sequence_length)
         self.last_prediction_time = None
-        self.prediction_threshold = 0.6
+        self.prediction_threshold = 0.4
         # Load model and artifacts
         self.load_model()
         
@@ -33,8 +33,6 @@ class PredictionModel:
             # Load model
             model_path = os.path.join(self.model_dir, 'ddos_model.h5')
             self.model = tf.keras.models.load_model(model_path)
-            
-            # Load preprocessing artifacts
             self.scaler = joblib.load(os.path.join(self.model_dir, 'scaler.pkl'))
             self.label_encoder = joblib.load(os.path.join(self.model_dir, 'label_encoder.pkl'))
             self.feature_columns = joblib.load(os.path.join(self.model_dir, 'feature_columns.pkl'))
@@ -46,11 +44,9 @@ class PredictionModel:
             
             # If loading fails, set up with defaults
             self.feature_columns = [
-                'Source IP', 'Destination IP', 'Protocol',
-                'Total Length of Fwd Packets', 'Fwd Packet Length Min',
-                'Bwd IAT Mean', 'Flow IAT Min', 'Init_Win_bytes_forward',
-                'Init_Win_bytes_backward', 'ACK Flag Count', 'SYN Flag Count',
-                'FIN Flag Count', 'Flow Packets/s', 'Flow Bytes/s'
+                'Source IP', 'Destination IP', 'Protocol','Total Length of Fwd Packets', 'Fwd Packet Length Min',
+                'Bwd IAT Mean', 'Flow IAT Min', 'Init_Win_bytes_forward','Init_Win_bytes_backward', 'ACK Flag Count', 
+                'SYN Flag Count','FIN Flag Count', 'Flow Packets/s', 'Flow Bytes/s'
             ]
     
     def preprocess_data(self, traffic_data): 
@@ -67,11 +63,9 @@ class PredictionModel:
         missing_cols = set(self.feature_columns) - set(traffic_data.columns)
         for col in missing_cols:
             traffic_data[col] = 0  
-            
-        # Select only the features used by the model
+             
         traffic_data = traffic_data[self.feature_columns]
         
-        # Apply scaling if scaler is available
         if self.scaler:
             try:
                 traffic_data = pd.DataFrame(
@@ -99,27 +93,36 @@ class PredictionModel:
             return {"prediction": "Insufficient data", "probability": 0.0, "status": "Insufficient data"}
             
         # Create sequence for LSTM input
-        sequence = np.array([list(self.window)])
+        # sequence = np.array([list(self.window)])
         
+        sequence = np.array([list(self.window)])
+        pred_probability = float(self.model.predict(sequence, verbose=0)[0][0])
+        
+        # Incorporate rps if available from server.py
+        global requests_per_second
+        rps_factor = min(requests_per_second / 50, 2.0)  # Cap influence at 100 rps
+        adjusted_prob = pred_probability * (1 + rps_factor * 0.5)
+         
+        pred_label = "DDoS Attack" if adjusted_prob > self.prediction_threshold else "Normal Traffic"
+        status = "DDoS Attack Detected" if adjusted_prob > self.prediction_threshold else "Normal Traffic"
         # Make prediction
-        pred_probability = float(self.model.predict(sequence,verbose = 0)[0][0])
-        pred_label = "DDoS Attack" if pred_probability > 0.6 else "Normal Traffic"
-        status = "DDoS Attack Detected" if pred_probability > 0.6 else "Normal Traffic"
         
         # Store prediction in history
         self.history.append({
-                    "timestamp": pd.Timestamp.now(),
+                    "timestamp": current_time,
                     "prediction": pred_label,
-                    "probability": pred_probability,
+                    "probability": adjusted_prob,
                     "status": status
                         })
         
         return {
         "prediction": pred_label,
-        "probability": pred_probability,
+        "probability": adjusted_prob,
         "status": status
                 }
         
     def get_history(self):
-        """Return recent prediction history"""
+         
         return list(self.history)
+    
+    

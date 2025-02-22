@@ -14,8 +14,8 @@ def generate_normal_traffic(src_ip=None):
         src_ip = f"192.168.{np.random.randint(1, 255)}.{np.random.randint(1, 255)}"
         
     traffic_data = {
-        "Source IP": src_ip,
-        "Destination IP": f"10.0.{np.random.randint(1, 255)}.{np.random.randint(1, 255)}",
+        'Source IP': src_ip,
+        'Destination IP':  f"10.0.{np.random.randint(1, 255)}.{np.random.randint(1, 255)}",
         "Protocol": np.random.choice([6, 17, 1]),  # TCP, UDP, ICMP
         "Total Length of Fwd Packets": np.random.randint(60, 1500),
         "Fwd Packet Length Min": np.random.randint(20, 60),
@@ -48,7 +48,7 @@ def generate_attack_traffic(attack_type="http_flood" , src_ip=None):
             "ACK Flag Count": 0,
             "FIN Flag Count": 0,
             "Flow Packets/s": np.random.uniform(500, 5000),
-            "Flow Bytes/s": np.random.uniform(5000, 50000)
+            "Flow Bytes/s": np.random.uniform(50000, 500000)
         })
     elif attack_type == "http_flood":
         
@@ -56,7 +56,7 @@ def generate_attack_traffic(attack_type="http_flood" , src_ip=None):
             "Protocol": 6,  # TCP
             "ACK Flag Count": 1,
             "SYN Flag Count": 0,
-            "Flow Packets/s": np.random.uniform(200, 2000),
+            "Flow Packets/s": np.random.uniform(500, 2000),
             "Flow Bytes/s": np.random.uniform(10000, 100000),
             "Total Length of Fwd Packets": np.random.randint(1000, 10000)
         })
@@ -94,7 +94,7 @@ def send_traffic(url, is_attack=False, attack_type="http_flood", duration=60, rp
                 data = {"traffic_data": [traffic_data]}
                 
                 try:
-                    response = requests.post(url, json=data, timeout=2)
+                    response = requests.post(url, json=data, timeout=5)
                     request_count += 1
                     
                     if request_count % 100 == 0:

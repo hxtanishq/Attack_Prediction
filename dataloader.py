@@ -3,7 +3,8 @@ import pandas as pd
 import os
 import logging
 
-logging.basicConfig(filename = "load_data",level=logging.INFO)
+logging.basicConfig(filename = "load_data.log",level=logging.INFO,format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 def load_cicddos2019(data_path='./data', sample_size=None):

@@ -19,14 +19,14 @@ logger = logging.getLogger(__name__)
 
 os.makedirs('logs', exist_ok=True)
 
-log_file = os.path.join('logs', f'traffic_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv')
+log_file = os.path.join('logs', f'server.{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv')
 
 with open(log_file, 'w', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(['timestamp', 'request_count', 'rps', 'prediction', 'probability', 'status'])
 
 def log_request_to_csv(request_data, prediction_result):
-    """Log request and prediction data to CSV file"""
+ 
     with open(log_file, 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
@@ -37,15 +37,14 @@ def log_request_to_csv(request_data, prediction_result):
             prediction_result.get('probability', 0),
             prediction_result.get('status', 'Unknown')
         ])
-
-# Initialize the prediction model
+ 
 predictor = None
 
 def init_predictor():
     global predictor
     try:
         predictor = PredictionModel()
-        logger.info("Prediction model initialized successfully")
+        print("Prediction model initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize predictor: {str(e)}")
         raise
@@ -65,19 +64,20 @@ def error_handler(f):
 
 # Global variables to count requests and track requests per second
 request_count = 0
+totalReq = 0
 requests_per_second = 0
 ddos_detection_status = "Normal Traffic"
 lock = threading.Lock()
 
 def reset_request_count():
-    global request_count, requests_per_second
+    global request_count, requests_per_second, totalReq
     while True:
-        time.sleep(1)  # Reset every second
+        time.sleep(0.5)  
         with lock:
+            totalReq += request_count
             requests_per_second = request_count
             request_count = 0
-
-# Start a background thread to track requests per second
+ 
 threading.Thread(target=reset_request_count, daemon=True).start()
 
 @app.route("/")
@@ -93,7 +93,7 @@ def model_metrics():
     except Exception as e:
         logger.error(f"Error loading model metrics: {str(e)}")
         return jsonify({
-            'accuracy': 0.95,  # Default values if file not found
+            'accuracy': 0.95,  
             'precision': 0.94,
             'recall': 0.93,
             'f1_score': 0.94
@@ -116,31 +116,41 @@ def count():
     with lock:
         return jsonify({"count": request_count, "rps": requests_per_second})
 
+@app.route("/total_count", methods=["GET"])
+def total_count():
+    with lock:
+        return jsonify({"count": totalReq})
+
 @app.route('/predict', methods=['POST'])
+@error_handler
 def predict():
     global request_count, ddos_detection_status
     with lock:
         request_count += 1
-    
+    if predictor is None:
+        logger.error("Predictor not initialized")
+        return jsonify({"error": "Prediction model not initialized", "status": "Error"}), 500
     try:
-        data = request.json  # Expecting JSON input
+        data = request.json   
         if not data or 'traffic_data' not in data:
             return jsonify({"error": "Invalid input. Expecting 'traffic_data' field.",
                            "prediction": "Unknown", 
                            "probability": 0.0,
                            "status": "Error"}), 400
-        # Convert input to pandas DataFrame
-        traffic_data = pd.DataFrame(data['traffic_data'])
+ 
+        # traffic_data = pd.DataFrame(data['traffic_data'])
+        # result = predictor.predict(traffic_data)
+        # if 'status' not in result:
+        #     result['status'] = "Normal Traffic"
+        # ddos_detection_status = result["status"]
+        # log_request_to_csv(data, result)
         
-        # Run prediction
+        traffic_data = pd.DataFrame(data['traffic_data'])
         result = predictor.predict(traffic_data)
-        if 'status' not in result:
-            result['status'] = "Normal Traffic"
-            
         ddos_detection_status = result["status"]
         log_request_to_csv(data, result)
-        
         return jsonify(result)
+    
     
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
@@ -152,11 +162,13 @@ def predict():
         }), 500
 @app.route('/status', methods=['GET'])
 def status():
-    return jsonify({
-        "requests_per_second": requests_per_second,
-        "status": ddos_detection_status,
-        "recent_predictions": predictor.get_history()
-    })
+    if predictor is None:
+        return jsonify({"requests_per_second": requests_per_second,
+                        "status": "Error: Predictor not initialized",
+                        "recent_predictions": []})
+    return jsonify({"requests_per_second": requests_per_second,
+                    "status": ddos_detection_status,
+                    "recent_predictions": predictor.get_history()})
 
 @app.route("/monitor", methods=["GET"])
 def monitor():
@@ -179,32 +191,30 @@ def test_attack():
         return jsonify({"error": str(e)}), 500
 
 def run_attack_test():
-    """Run the attack test simulation"""
+     
     try:
         from test_attack import run_attack_simulation
         server_url = f"http://localhost:5000/predict"
         run_attack_simulation(
             server_url,
-            attack_type="syn_flood",
+            attack_type="http_flood",
             normal_duration=20,
-            attack_duration=30,
-            normal_rps=(1, 5),
-            attack_rps=(50, 150)
+            attack_duration=50,
+            normal_rps=(1, 10),
+            attack_rps=(50, 200)
         )
     except Exception as e:
         logger.error(f"Error in attack test: {str(e)}")
 
 def run_server(host='0.0.0.0', port=5000):
+    init_predictor()
     app.run(host=host, port=port, debug=False, threaded=True)
 
 if __name__ == '__main__':
-    # Check if model exists, train if it doesn't
     if not os.path.exists('./model/ddos_model.h5'):
         logger.info("No model found. Training a new model...")
         from train_model import train_lstm_model
         train_lstm_model()
-        # Reload the model after training
-        predictor = PredictionModel()
-    
+        
     logger.info(f"Starting DDoS detection server on port 5000")
     run_server(debug=True)

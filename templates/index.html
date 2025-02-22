@@ -167,11 +167,11 @@
     <script>
         // Function to update the current RPS
         function updateRPS() {
-            fetch('/count')
+            fetch('/total_count')
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('current-rps').textContent = 
-                        `Current traffic: ${data.rps} requests per second`;
+                        `Current traffic: ${data.count} requests`;
                 })
                 .catch(error => {
                     console.error('Error fetching RPS:', error);
