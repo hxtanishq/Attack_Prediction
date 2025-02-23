@@ -21,8 +21,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-# Set TensorFlow to grow GPU memory usage as needed
+ 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     try:
@@ -31,105 +30,6 @@ if gpus:
     except RuntimeError as e:
         logger.error(f"GPU setup error: {str(e)}")
 
-# def prepare_data(data_df=None, data_path=None):
-     
-#     if data_df is None and data_path:
-#         data_df = load_cicddos2019(data_path)
-        
-    
-#     if data_df is None:
-#         logger.warning("No data provided. Generating synthetic data.")
-#         return generate_synthetic_data()
-    
-#     logger.info(f"Preprocessing dataset with {len(data_df)} records")
-    
-#     # Drop non-numeric columns
-#     # data_df = data_df.select_dtypes(include=['number'])
-
-#     # Handle timestamp column if it exists
-#     timestamp_col = None
-#     for col in data_df.columns:
-#         if 'time' in col.lower() or ' timestamp' in col.lower():
-#             timestamp_col = col
-#             data_df[timestamp_col] = pd.to_datetime(data_df[timestamp_col], errors='coerce')
-#             break
-    
-#     # Drop unnecessary columns
-#     cols_to_drop = ['Flow ID'] if 'Flow ID' in data_df.columns else []
-#     # Add other unnecessary columns to drop
-#     data_df.drop(columns=cols_to_drop, errors='ignore', inplace=True)
-    
-#     # Handle constant and NaN columns
-#     constant_cols = [col for col in data_df.columns if data_df[col].nunique() <= 1]
-#     data_df.drop(columns=constant_cols, inplace=True)
-#     data_df = data_df.replace([np.inf, -np.inf], np.nan)
-#     data_df = data_df.dropna(axis=1)
-    
-#     label_col = None
-#     for col in data_df.columns:
-#         if ' label' in col.lower() or 'attack' in col.lower() or 'class' in col.lower():
-#             label_col = col
-#             break
-    
-#     if not label_col:
-#         logger.error("No label column found in dataset")
-#         raise ValueError("Could not identify the label column in the dataset")
-#     logger.info(data_df[label_col])
-#     # Encode labels
-#     label_encoder = LabelEncoder()
-#     data_df[label_col] = label_encoder.fit_transform(data_df[label_col])
-    
-#     # Find and encode IP columns
-#     for col in ['Source IP', ' Destination IP']:
-#         data_df[col] = data_df[col].apply(lambda x: int(hash(str(x)) % 1000000))
-
-#     ip_cols = [col for col in data_df.columns if ' Source IP' or ' Destination IP' in col.lower() or 'addr' in col.lower()]
-#     # if ip_cols:
-#     #     ip_encoder = LabelEncoder()
-#     #     all_ips = pd.concat([data_df[col] for col in ip_cols])
-#     #     ip_encoder.fit(all_ips)
-#     #     for col in ip_cols:
-#     #         data_df[col] = ip_encoder.transform(data_df[col])
-#     # Identify IP-related columns
-#     # ip_cols = [col for col in data_df.columns if 'ip' in col.lower() or 'addr' in col.lower()]
-# # 
-#     if ip_cols:
-#         ip_encoder = LabelEncoder()
-        
-#         # Convert IPs to strings before encoding
-#         for col in ip_cols:
-#             data_df[col] = data_df[col].astype(str)  
-        
-#         all_ips = pd.concat([data_df[col] for col in ip_cols])
-        
-#         ip_encoder.fit(all_ips)
-        
-#         for col in ip_cols:
-#             data_df[col] = ip_encoder.transform(data_df[col])
-
-    
-#     # Set timestamp as index if available
-#     if timestamp_col:
-#         data_df.set_index(timestamp_col, inplace=True)
-    
-#     # Normalize numerical features
-#     numeric_cols = data_df.select_dtypes(include=['float64', 'int64']).columns
-#     numeric_cols = [col for col in numeric_cols if col != label_col]
-    
-#     scaler = StandardScaler()
-#     data_df[numeric_cols] = scaler.fit_transform(data_df[numeric_cols])
-#     data_df[label_col] = data_df[label_col].astype(int)
-#     # Save feature columns for future reference
-#     feature_cols = list(data_df.columns)
-#     if label_col in feature_cols:
-#         feature_cols.remove(label_col)
-    
-#     return data_df, scaler, label_encoder, feature_cols, label_col
-
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-
 def prepare_data(data_df=None, data_path=None):
    
     if data_df is None and data_path:
@@ -137,9 +37,7 @@ def prepare_data(data_df=None, data_path=None):
     
     if data_df is None:
         raise ValueError("No valid dataset provided.")
-
-     
-    # Identify the label column
+ 
     label_col = None
     for col in data_df.columns:
         if any(keyword in col.lower() for keyword in [' label', 'attack', 'class']):
@@ -148,27 +46,22 @@ def prepare_data(data_df=None, data_path=None):
 
     if not label_col:
         raise ValueError("Could not identify the label column in the dataset.")
-
-    # 1️⃣ **Drop Unnecessary & Non-Numeric Columns**
-    drop_cols = ['Flow ID', ' Timestamp', ' Fwd Header Length']  # Remove non-useful features
+ 
+    drop_cols = [' Timestamp', ' Fwd Header Length']   
     drop_cols = [col for col in drop_cols if col in data_df.columns]
     data_df.drop(columns=drop_cols, errors='ignore', inplace=True)
 
-    # 2️⃣ **Convert Label to Binary (0 or 1)**
     label_encoder = LabelEncoder()
     data_df[label_col] = label_encoder.fit_transform(data_df[label_col])
 
-    # 3️⃣ **Ensure Labels Are Strictly 0 or 1**
     unique_labels = np.unique(data_df[label_col])
     if set(unique_labels) != {0, 1}:
         raise ValueError(f"Label column must contain only 0 or 1, but found: {unique_labels}")
 
-    # 4️⃣ **Encode IP Addresses Properly (Optional)**
     for col in ['Source IP', ' Destination IP']:
         if col in data_df.columns:
             data_df[col] = data_df[col].astype(str).apply(lambda x: int(hash(x) % 100000))
-            
-    # 5️⃣ **Handle Infinite & Missing Values**
+             
     data_df.replace([np.inf, -np.inf], np.nan, inplace=True)
     data_df.dropna(inplace=True)
     
@@ -176,8 +69,7 @@ def prepare_data(data_df=None, data_path=None):
         if data_df[col].dtype == 'O':   
             print(f"Dropping non-numeric column: {col}")
             data_df.drop(columns=[col], inplace=True)
-
-    # 6️⃣ **Normalize Numeric Features**
+ 
     numeric_cols = data_df.select_dtypes(include=['int64', 'float64']).columns.tolist()
     numeric_cols = [col for col in numeric_cols if col != label_col] 
     
@@ -192,7 +84,7 @@ def prepare_data(data_df=None, data_path=None):
 
 
 def generate_synthetic_data():
-    """Generate synthetic DDoS traffic data for demo purposes"""
+    
     logger.info("Generating synthetic data for demo purposes")
     timestamps = pd.date_range(start='2023-01-01', periods=10000, freq='1S')
     np.random.seed(42)
@@ -228,23 +120,7 @@ def generate_synthetic_data():
     data[' SYN Flag Count'][attack_indices] = np.random.binomial(1, 0.95, len(attack_indices))
 
     data['Label'] = labels
-    # Generate labels (0 for normal, 1 for attack)
-    # labels = np.zeros(n_samples)
-    
-    # attack_times = [
-    #     (1000, 1500),   # First attack period
-    #     (3000, 3500),   # Second attack period
-    #     (7000, 7500)    # Third attack period
-    # ]
-    
-    # for start, end in attack_times:
-    #     labels[start:end] = 1
-        
-    #     data['Flow Packets/s'][start:end] *= 10
-    #     data['Flow Bytes/s'][start:end] *= 5
-    #     data['SYN Flag Count'][start:end] = np.random.binomial(1, 0.9, end-start)
-    
-    # data['Label'] = labels
+   
     
     df = pd.DataFrame(data)
     df.set_index('Timestamp', inplace=True)

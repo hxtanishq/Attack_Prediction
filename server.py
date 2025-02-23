@@ -1,5 +1,5 @@
 # server.py
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify, render_template, send_from_directory, Response
 import pandas as pd
 import threading
 import time
@@ -76,6 +76,7 @@ def reset_request_count():
         with lock:
             totalReq += request_count
             requests_per_second = request_count
+            logger.info(f"Reset request_count: {request_count}, rps: {requests_per_second}")
             request_count = 0
  
 threading.Thread(target=reset_request_count, daemon=True).start()
@@ -105,7 +106,7 @@ def download_logs():
         return send_from_directory('logs', os.path.basename(log_file), as_attachment=True)
     except Exception as e:
         logger.error(f"Error downloading logs: {str(e)}")
-        return jsonify({"error": "Logs not available"}), 404
+        return "Log file not found", 404 
     
 @app.route("/static/<path:path>")
 def serve_static(path):
@@ -137,13 +138,6 @@ def predict():
                            "prediction": "Unknown", 
                            "probability": 0.0,
                            "status": "Error"}), 400
- 
-        # traffic_data = pd.DataFrame(data['traffic_data'])
-        # result = predictor.predict(traffic_data)
-        # if 'status' not in result:
-        #     result['status'] = "Normal Traffic"
-        # ddos_detection_status = result["status"]
-        # log_request_to_csv(data, result)
         
         traffic_data = pd.DataFrame(data['traffic_data'])
         result = predictor.predict(traffic_data)
@@ -174,11 +168,10 @@ def status():
 def monitor():
     return render_template("./monitor.html")
 
-# Add this to server.py
 @app.route('/test-attack', methods=['POST'])
 def test_attack():
     try:
-        # Run in a background thread to not block the response
+         
         attack_thread = threading.Thread(
             target=run_attack_test,
             daemon=True
@@ -193,15 +186,14 @@ def test_attack():
 def run_attack_test():
      
     try:
-        from test_attack import run_attack_simulation
+        from attack import run_attack_simulation
         server_url = f"http://localhost:5000/predict"
         run_attack_simulation(
             server_url,
-            attack_type="http_flood",
-            normal_duration=20,
-            attack_duration=50,
-            normal_rps=(1, 10),
-            attack_rps=(50, 200)
+            normal_duration=15,
+            attack_duration=60,
+            normal_rps=(1, 20),
+            attack_rps=(50, 500)
         )
     except Exception as e:
         logger.error(f"Error in attack test: {str(e)}")

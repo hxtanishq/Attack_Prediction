@@ -87,11 +87,12 @@ def send_traffic(url, is_attack=False, attack_type="http_flood", duration=60, rp
             
             for _ in range(rps):
                 if is_attack:
-                    traffic_data = generate_attack_traffic(attack_type, src_ip)
+                    num_points = np.random.randint(5, 10)
+                    traffic_data_list = [generate_attack_traffic(attack_type, src_ip) for _ in range(num_points)]
+                    data = {"traffic_data": traffic_data_list}
                 else:
                     traffic_data = generate_normal_traffic(src_ip)
-                
-                data = {"traffic_data": [traffic_data]}
+                    data = {"traffic_data": [traffic_data]}
                 
                 try:
                     response = requests.post(url, json=data, timeout=5)

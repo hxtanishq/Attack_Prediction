@@ -24,13 +24,11 @@ class PredictionModel:
         self.window = deque(maxlen=sequence_length)
         self.last_prediction_time = None
         self.prediction_threshold = 0.4
-        # Load model and artifacts
         self.load_model()
         
     def load_model(self):
         logger.info("Loading TensorFlow model - this may take a moment...")
         try:
-            # Load model
             model_path = os.path.join(self.model_dir, 'ddos_model.h5')
             self.model = tf.keras.models.load_model(model_path)
             self.scaler = joblib.load(os.path.join(self.model_dir, 'scaler.pkl'))
@@ -49,80 +47,96 @@ class PredictionModel:
                 'SYN Flag Count','FIN Flag Count', 'Flow Packets/s', 'Flow Bytes/s'
             ]
     
-    def preprocess_data(self, traffic_data): 
-        # Ensure dataframe format
-        if not isinstance(traffic_data, pd.DataFrame):
-            traffic_data = pd.DataFrame([traffic_data])
+    def preprocess_data(self, data_df ): 
+
+        # if not isinstance(traffic_data, pd.DataFrame):
+        #     traffic_data = pd.DataFrame([traffic_data])
             
-        ip_cols = [col for col in traffic_data.columns if 'ip' in col.lower()]
-        for col in ip_cols:
-            if col in traffic_data.columns: 
-                traffic_data[col] = traffic_data[col].apply(
-                    lambda x: int(hash(str(x)) % 1000000)
-                )     
-        missing_cols = set(self.feature_columns) - set(traffic_data.columns)
-        for col in missing_cols:
-            traffic_data[col] = 0  
+        # for col in ['Source IP', ' Destination IP']:
+        #     if col in traffic_data.columns:
+        #         traffic_data[col] = traffic_data[col].astype(str).apply(lambda x: int(hash(x) % 100000))
+                    
+        # missing_cols = set(self.feature_columns) - set(traffic_data.columns)
+        # for col in missing_cols:
+        #     traffic_data[col] = 0  
              
-        traffic_data = traffic_data[self.feature_columns]
+        # traffic_data = traffic_data[self.feature_columns]
+        # traffic_data.replace([np.inf, -np.inf], np.nan, inplace=True)
+        # traffic_data.dropna(inplace=True)
+            
+        # if self.scaler:
+        #     try:
+        #         traffic_data = pd.DataFrame(
+        #             self.scaler.transform(traffic_data),
+        #             columns=self.feature_columns
+        #         )
+        #     except Exception as e:
+        #         logger.warning(f"Scaling error: {str(e)}. Using unscaled data.")
         
+        df = data_df.copy() 
+        drop_cols = ['Timestamp', 'Fwd Header Length']
+        df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
+         
+        for col in ['Source IP', 'Destination IP']:
+            if col in df.columns:
+                df[col] = df[col].astype(str).apply(lambda x: int(hash(x) % 100000))  
+        
+        df = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+        
+        missing_cols = set(self.feature_columns) - set(df.columns)
+        for col in missing_cols:
+            df[col] = 0
+         
+        df = df[self.feature_columns]
+         
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        df.fillna(0, inplace=True)
+         
         if self.scaler:
             try:
-                traffic_data = pd.DataFrame(
-                    self.scaler.transform(traffic_data),
-                    columns=self.feature_columns
-                )
+                scaled_data = self.scaler.transform(df)
+                df = pd.DataFrame(scaled_data, columns=self.feature_columns)
             except Exception as e:
-                logger.warning(f"Scaling error: {str(e)}. Using unscaled data.")
+                logger.error(f"Scaling error: {str(e)}")
+                raise
         
-        return traffic_data
-    
+        return df
+
     def predict(self, traffic_data): 
         if self.model is None:
                 raise RuntimeError("Model not loaded")
-            
-        
-        current_time = datetime.now()
-         
-        processed_data = self.preprocess_data(traffic_data)
+        current_time = datetime.now()         
+        processed_data = self.preprocess_data(data_df = traffic_data)
          
         for _, row in processed_data.iterrows():
             self.window.append(row.values)
              
         if len(self.window) < self.sequence_length:
             return {"prediction": "Insufficient data", "probability": 0.0, "status": "Insufficient data"}
-            
-        # Create sequence for LSTM input
-        # sequence = np.array([list(self.window)])
+             
         
         sequence = np.array([list(self.window)])
-        pred_probability = float(self.model.predict(sequence, verbose=0)[0][0])
+        adjusted_prob = float(self.model.predict(sequence, verbose=0)[0][0])
         
-        # Incorporate rps if available from server.py
-        global requests_per_second
-        rps_factor = min(requests_per_second / 50, 2.0)  # Cap influence at 100 rps
-        adjusted_prob = pred_probability * (1 + rps_factor * 0.5)
+        # adjusted_prob = pred_probability
          
         pred_label = "DDoS Attack" if adjusted_prob > self.prediction_threshold else "Normal Traffic"
         status = "DDoS Attack Detected" if adjusted_prob > self.prediction_threshold else "Normal Traffic"
-        # Make prediction
-        
-        # Store prediction in history
+         
         self.history.append({
-                    "timestamp": current_time,
-                    "prediction": pred_label,
-                    "probability": adjusted_prob,
-                    "status": status
+                        "timestamp": current_time,
+                        "prediction": pred_label,
+                        "probability": adjusted_prob,
+                        "status": status
                         })
         
         return {
-        "prediction": pred_label,
-        "probability": adjusted_prob,
-        "status": status
+                "prediction": pred_label,
+                "probability": adjusted_prob,
+                "status": status
                 }
         
-    def get_history(self):
-         
+    def get_history(self):         
         return list(self.history)
     
     
