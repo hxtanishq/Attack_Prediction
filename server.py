@@ -19,22 +19,25 @@ logger = logging.getLogger(__name__)
 
 os.makedirs('logs', exist_ok=True)
 
-log_file = os.path.join('logs', f'server.{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv')
+log_file = os.path.join('logs', f'OUTPUT.{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv')
 
 with open(log_file, 'w', newline='') as f:
     writer = csv.writer(f)
     writer.writerow(['timestamp', 'request_count', 'rps', 'prediction', 'probability', 'status'])
 
-def log_request_to_csv(request_data, prediction_result):
+def log_request_to_csv(prediction_result):
  
     with open(log_file, 'a', newline='') as f:
         writer = csv.writer(f)
+        probability = prediction_result.get('probability', 0)
+        formatted_probability = "{:.2f}".format(probability) if isinstance(probability, (int, float)) else probability
+
         writer.writerow([
             datetime.now().isoformat(),
             request_count,
             requests_per_second,
             prediction_result.get('prediction', 'Unknown'),
-            prediction_result.get('probability', 0),
+            formatted_probability,
             prediction_result.get('status', 'Unknown')
         ])
  
@@ -142,7 +145,7 @@ def predict():
         traffic_data = pd.DataFrame(data['traffic_data'])
         result = predictor.predict(traffic_data)
         ddos_detection_status = result["status"]
-        log_request_to_csv(data, result)
+        log_request_to_csv(result)
         return jsonify(result)
     
     
@@ -154,6 +157,7 @@ def predict():
             "probability": 0.0,
             "status": "Error"
         }), 500
+        
 @app.route('/status', methods=['GET'])
 def status():
     if predictor is None:
@@ -170,8 +174,7 @@ def monitor():
 
 @app.route('/test-attack', methods=['POST'])
 def test_attack():
-    try:
-         
+    try:         
         attack_thread = threading.Thread(
             target=run_attack_test,
             daemon=True
@@ -184,7 +187,6 @@ def test_attack():
         return jsonify({"error": str(e)}), 500
 
 def run_attack_test():
-     
     try:
         from attack import run_attack_simulation
         server_url = f"http://localhost:5000/predict"

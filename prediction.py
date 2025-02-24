@@ -23,7 +23,7 @@ class PredictionModel:
         self.history = deque(maxlen=100)
         self.window = deque(maxlen=sequence_length)
         self.last_prediction_time = None
-        self.prediction_threshold = 0.4
+        self.prediction_threshold = 0.6
         self.load_model()
         
     def load_model(self):
@@ -48,31 +48,6 @@ class PredictionModel:
             ]
     
     def preprocess_data(self, data_df ): 
-
-        # if not isinstance(traffic_data, pd.DataFrame):
-        #     traffic_data = pd.DataFrame([traffic_data])
-            
-        # for col in ['Source IP', ' Destination IP']:
-        #     if col in traffic_data.columns:
-        #         traffic_data[col] = traffic_data[col].astype(str).apply(lambda x: int(hash(x) % 100000))
-                    
-        # missing_cols = set(self.feature_columns) - set(traffic_data.columns)
-        # for col in missing_cols:
-        #     traffic_data[col] = 0  
-             
-        # traffic_data = traffic_data[self.feature_columns]
-        # traffic_data.replace([np.inf, -np.inf], np.nan, inplace=True)
-        # traffic_data.dropna(inplace=True)
-            
-        # if self.scaler:
-        #     try:
-        #         traffic_data = pd.DataFrame(
-        #             self.scaler.transform(traffic_data),
-        #             columns=self.feature_columns
-        #         )
-        #     except Exception as e:
-        #         logger.warning(f"Scaling error: {str(e)}. Using unscaled data.")
-        
         df = data_df.copy() 
         drop_cols = ['Timestamp', 'Fwd Header Length']
         df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
@@ -81,7 +56,7 @@ class PredictionModel:
             if col in df.columns:
                 df[col] = df[col].astype(str).apply(lambda x: int(hash(x) % 100000))  
         
-        df = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+        df = df.select_dtypes(include=['int64', 'float64']) 
         
         missing_cols = set(self.feature_columns) - set(df.columns)
         for col in missing_cols:

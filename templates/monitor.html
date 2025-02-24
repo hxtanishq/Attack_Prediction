@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DDoS Detection System Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         margin: 0;
         padding: 0;
-        background-color: #f5f7fa;
+        background-color: rgb(255, 255, 255);
         color: #333;
       }
 
@@ -18,9 +19,9 @@
         max-width: 1200px;
         margin: 0 auto;
         padding: 20px;
-        display: flex; /* Enable Flexbox */
-        flex-direction: column; /* Stack elements vertically */
-        gap: 20px; /* Add consistent gap between elements */
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
       }
 
       .header {
@@ -33,15 +34,16 @@
       }
 
       .dashboard-grid {
-        display: flex;
-        flex-direction: column; /* Stack cards vertically */
-        gap: 20px; /* Consistent gap between cards */
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
       }
 
       .card {
         background: white;
         border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        bordercolor: black;
+        box-shadow: 0 2px 10px rgba(24, 38, 163, 0.1);
         padding: 20px;
         transition: transform 0.3s ease;
       }
@@ -52,10 +54,7 @@
 
       .metrics-grid {
         display: grid;
-        grid-template-columns: repeat(
-          auto-fit,
-          minmax(150px, 1fr)
-        ); /* Responsive grid */
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 10px;
       }
 
@@ -74,12 +73,12 @@
       }
 
       .status-normal {
-        background-color: #27ae60;
+        background-color: rgb(97, 185, 57);
         color: white;
       }
 
       .status-ddos {
-        background-color: #e74c3c;
+        background-color: rgb(255, 0, 0);
         color: white;
         animation: pulse 1.5s infinite;
       }
@@ -111,14 +110,20 @@
 
       .chart-container {
         position: relative;
+        margin-bottom: 20px;
+      }
+
+      .chart-container.traffic {
         height: 350px;
-        margin-bottom: 20px; /* Consistent bottom margin */
+      }
+      .chart-container.other {
+        height: 200px;
       }
 
       .stats-container {
         display: flex;
-        justify-content: space-around; /* Distribute space evenly */
-        gap: 20px; /* Consistent gap between stats */
+        justify-content: space-around;
+        gap: 10px;
       }
       .stat-box {
         background: white;
@@ -126,20 +131,33 @@
         padding: 15px 20px;
         flex: 1;
         margin: 0 10px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 10px rgba(30, 16, 235, 0.81);
         text-align: center;
       }
 
       .stat-value {
         font-size: 32px;
         font-weight: bold;
-        color: #2c3e50;
+        color: rgb(14, 35, 56);
       }
 
       .stat-label {
         font-size: 14px;
-        color: #7f8c8d;
+        color: rgb(16, 16, 18);
         margin-top: 5px;
+      }
+      .action-button {
+        padding: 10px 20px;
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .action-button:hover {
+        background-color: #34495e;
       }
     </style>
   </head>
@@ -165,10 +183,10 @@
       </div>
 
       <div class="chart-container">
-        <canvas id="trafficChart"></canvas>
+        <canvas id="trafficChart" style:" height:100px" ></canvas>
       </div>
 
-      <button id="downloadLogsBtn" class="action-button">
+      <button type="button" id="downloadLogsBtn" class="action-button">
         Download Traffic Logs
       </button>
 
@@ -223,7 +241,7 @@
     </div>
 
     <script>
-      // Traffic Chart
+       
       const ctxTraffic = document
         .getElementById("trafficChart")
         .getContext("2d");
@@ -233,7 +251,7 @@
           labels: [],
           datasets: [
             {
-              label: "Requests Per Second",
+              label: "Requests with Time",
               data: [],
               borderColor: "#3498db",
               backgroundColor: "rgba(52, 152, 219, 0.1)",
@@ -245,14 +263,16 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: {
-            duration: 0,
-          },
+          animation: false,  
           scales: {
             x: {
               type: "time",
               time: {
                 unit: "second",
+                tooltipFormat: "HH:mm:ss",
+                displayFormats: {
+                  second: "HH:mm:ss",
+                },
               },
               title: {
                 display: true,
@@ -263,19 +283,18 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: "Requests/Second",
+                text: "Number of Requests",
               },
             },
-            plugins: {
-              legend: {
-                display: true,
-              },
+          },
+          plugins: {
+            legend: {
+              display: true,
             },
           },
         },
       });
-
-      // Confidence Chart
+ 
       const ctxConfidence = document
         .getElementById("confidenceChart")
         .getContext("2d");
@@ -286,14 +305,14 @@
           datasets: [
             {
               label: "Normal Traffic",
-              data: [100],
+              data: [50],
               backgroundColor: "#27ae60",
               borderColor: "#27ae60",
               borderWidth: 1,
             },
             {
               label: "Attack Traffic",
-              data: [0],
+              data: [50],
               backgroundColor: "#e74c3c",
               borderColor: "#e74c3c",
               borderWidth: 1,
@@ -320,8 +339,7 @@
           },
         },
       });
-
-      // Request Count Chart
+ 
       const ctxRequestCount = document
         .getElementById("requestCountChart")
         .getContext("2d");
@@ -331,12 +349,13 @@
           labels: [],
           datasets: [
             {
-              label: "Total Requests Received",
+              label: "Number of Requests Received",
               data: [],
-              borderColor: "#2ecc71",
-              backgroundColor: "rgba(46, 204, 113, 0.2)",
+              borderColor: "#3498db", 
+              backgroundColor: "rgba(52, 152, 219, 0.1)",  
               borderWidth: 2,
               fill: true,
+              tension: 0.1, 
             },
           ],
         },
@@ -350,67 +369,48 @@
             x: {
               type: "time",
               time: {
-                unit: "second",
+                unit: "minute", 
+                tooltipFormat: "HH:mm",  
+                displayFormats: {
+                  minute: "HH:mm",  
+                },
               },
               title: {
                 display: true,
-                text: "Time",
+                text: "Timestamp",
               },
             },
             y: {
               beginAtZero: true,
               title: {
                 display: true,
-                text: "Total Requests",
+                text: "Number of Requests",
+              },
+              max: 500,
+              ticks: {
+                stepSize: 50,
               },
             },
-            plugins: {
-              legend: {
-                display: true,
+          },
+          plugins: {
+            legend: {
+              display: true,
+            },
+            title: {
+              display: true,
+              text: "Number of Requests per Timestamp",
+              font: {
+                size: 16,
               },
             },
           },
         },
       });
 
+      let totalRequests = 0;
       let requestTime = 0;
       let peakRps = 0;
       let detectionCount = 0;
-      let totalRequests = 0;
-
-      function updateTrafficChart() {
-        fetch("/count")
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            const now = Date.now();
-
-            trafficChart.data.labels.push(now);
-            trafficChart.data.datasets[0].data.push(data.rps);
-
-            const maxDataPoints = 60;
-            if (trafficChart.data.labels.length > maxDataPoints) {
-              trafficChart.data.labels.shift();
-              trafficChart.data.datasets[0].data.shift();
-            }
-
-            trafficChart.update();
-
-            document.getElementById("currentRps").textContent = data.rps;
-
-            if (data.rps > peakRps) {
-              peakRps = data.rps;
-              document.getElementById("peakRps").textContent = peakRps;
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching count data:", error);
-          });
-      }
 
       function updateRequestCountChart() {
         fetch("/total_count")
@@ -423,16 +423,16 @@
           .then((data) => {
             totalRequests = data.count;
             const now = Date.now();
-
+ 
             requestCountChart.data.labels.push(now);
             requestCountChart.data.datasets[0].data.push(totalRequests);
-
+ 
             const maxDataPoints = 60;
             if (requestCountChart.data.labels.length > maxDataPoints) {
               requestCountChart.data.labels.shift();
               requestCountChart.data.datasets[0].data.shift();
             }
-
+ 
             requestCountChart.update();
           })
           .catch((error) => {
@@ -464,6 +464,7 @@
             document.getElementById("modelF1").textContent =
               (data.f1_score * 100).toFixed(2) + "%";
           })
+
           .catch((error) => {
             console.error("Error loading model metrics:", error);
             const metricsContainer =
@@ -472,6 +473,39 @@
               metricsContainer.innerHTML =
                 "<p style='color: red;'>Error loading metrics.</p>";
             }
+          });
+      }
+      function updateTrafficChart() {
+        fetch("/count")
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            const now = Date.now();
+
+            trafficChart.data.labels.push(now);
+            trafficChart.data.datasets[0].data.push(data.rps);
+
+            const maxDataPoints = 60;
+            if (trafficChart.data.labels.length > maxDataPoints) {
+              trafficChart.data.labels.shift();
+              trafficChart.data.datasets[0].data.shift();
+            }
+
+            trafficChart.update();
+
+            document.getElementById("currentRps").textContent = data.rps;
+
+            if (data.rps > peakRps) {
+              peakRps = data.rps;
+              document.getElementById("peakRps").textContent = peakRps;
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching count data:", error);
           });
       }
 
@@ -522,7 +556,6 @@
           });
       }
 
-      // Update status every second
       updateStatus();
       updateTrafficChart();
       updateRequestCountChart();
@@ -532,9 +565,8 @@
       setInterval(updateTrafficChart, 1000);
       setInterval(updateRequestCountChart, 1000);
 
-      // Add support for resetting stats
       document.addEventListener("DOMContentLoaded", function () {
-        loadModelMetrics();
+        window.onload = loadModelMetrics;
 
         const statsContainer = document.querySelector(".stats-container");
         const resetButton = document.createElement("div");
@@ -549,7 +581,7 @@
         resetButton.addEventListener("click", function () {
           peakRps = 0;
           detectionCount = 0;
-          totalRequests = 0; // Reset total requests
+          totalRequests = 0;
           document.getElementById("peakRps").textContent = "0";
           document.getElementById("detectionCount").textContent = "0";
 
