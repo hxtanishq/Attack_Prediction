@@ -75,7 +75,7 @@ lock = threading.Lock()
 def reset_request_count():
     global request_count, requests_per_second, totalReq
     while True:
-        time.sleep(0.5)  
+        time.sleep(1)  
         with lock:
             totalReq += request_count
             requests_per_second = request_count
@@ -156,7 +156,7 @@ def predict():
             "prediction": "Error",
             "probability": 0.0,
             "status": "Error"
-        }), 500
+        }), 500 
         
 @app.route('/status', methods=['GET'])
 def status():
@@ -194,8 +194,8 @@ def run_attack_test():
             server_url,
             normal_duration=15,
             attack_duration=60,
-            normal_rps=(1, 20),
-            attack_rps=(50, 500)
+            normal_rps=(1, 30),
+            attack_rps=(100, 800)
         )
     except Exception as e:
         logger.error(f"Error in attack test: {str(e)}")

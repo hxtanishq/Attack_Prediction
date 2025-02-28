@@ -81,8 +81,8 @@ if __name__ == "__main__":
     parser.add_argument('--url', default="http://127.0.0.1:5000/predict", help='Target URL')
     parser.add_argument('--normal-time', type=int, default=30, help='Duration of normal traffic (seconds)')
     parser.add_argument('--attack-time', type=int, default=30, help='Duration of attack traffic (seconds)')
-    parser.add_argument('--normal-rps', type=str, default="1,5", help='Normal RPS range (min,max)')
-    parser.add_argument('--attack-rps', type=str, default="50,200", help='Attack RPS range (min,max)')
+    parser.add_argument('--normal-rps', type=str, default="1,20", help='Normal RPS range (min,max)')
+    parser.add_argument('--attack-rps', type=str, default="100,700", help='Attack RPS range (min,max)')
 
     args = parser.parse_args()
 

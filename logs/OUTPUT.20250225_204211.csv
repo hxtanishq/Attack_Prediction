@@ -1,0 +1,40 @@
+timestamp,request_count,rps,prediction,probability,status
+2025-02-25T20:42:26.905997,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:28.948589,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:30.996339,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:33.069642,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:35.124567,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:37.205011,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:39.253729,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:41.307007,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:43.395420,1,0,Insufficient data,0.00,Insufficient data
+2025-02-25T20:42:46.102412,1,0,Normal Traffic,0.00,Normal Traffic
+2025-02-25T20:42:48.322235,0,1,Normal Traffic,0.00,Normal Traffic
+2025-02-25T20:42:50.518365,1,0,Normal Traffic,0.00,Normal Traffic
+2025-02-25T20:42:52.726954,1,0,Normal Traffic,0.00,Normal Traffic
+2025-02-25T20:42:54.951157,1,0,Normal Traffic,0.01,Normal Traffic
+2025-02-25T20:42:57.208613,1,0,Normal Traffic,0.01,Normal Traffic
+2025-02-25T20:42:59.438007,0,1,Normal Traffic,0.01,Normal Traffic
+2025-02-25T20:43:01.649658,1,0,Normal Traffic,0.00,Normal Traffic
+2025-02-25T20:43:04.903878,1,0,Normal Traffic,0.04,Normal Traffic
+2025-02-25T20:43:07.158408,1,0,Normal Traffic,0.14,Normal Traffic
+2025-02-25T20:43:09.363966,0,1,DDoS Attack,0.63,DDoS Attack Detected
+2025-02-25T20:43:11.665414,1,0,DDoS Attack,0.87,DDoS Attack Detected
+2025-02-25T20:43:13.886991,1,0,DDoS Attack,0.93,DDoS Attack Detected
+2025-02-25T20:43:16.124929,1,0,DDoS Attack,0.98,DDoS Attack Detected
+2025-02-25T20:43:18.351127,0,1,DDoS Attack,0.94,DDoS Attack Detected
+2025-02-25T20:43:20.595590,1,0,DDoS Attack,0.99,DDoS Attack Detected
+2025-02-25T20:43:22.822998,1,0,DDoS Attack,1.00,DDoS Attack Detected
+2025-02-25T20:43:25.038101,1,0,DDoS Attack,0.98,DDoS Attack Detected
+2025-02-25T20:43:27.261758,1,0,DDoS Attack,0.95,DDoS Attack Detected
+2025-02-25T20:43:29.476193,0,1,DDoS Attack,0.95,DDoS Attack Detected
+2025-02-25T20:43:31.695400,1,0,DDoS Attack,0.88,DDoS Attack Detected
+2025-02-25T20:43:33.926917,1,0,Normal Traffic,0.42,Normal Traffic
+2025-02-25T20:43:36.165628,1,0,Normal Traffic,0.01,Normal Traffic
+2025-02-25T20:43:38.341055,1,0,Normal Traffic,0.00,Normal Traffic
+2025-02-25T20:43:40.552224,1,0,Normal Traffic,0.15,Normal Traffic
+2025-02-25T20:43:42.784171,1,0,Normal Traffic,0.01,Normal Traffic
+2025-02-25T20:43:45.006278,1,0,Normal Traffic,0.06,Normal Traffic
+2025-02-25T20:43:47.259683,1,0,Normal Traffic,0.47,Normal Traffic
+2025-02-25T20:43:49.468280,0,1,DDoS Attack,0.92,DDoS Attack Detected
+2025-02-25T20:43:51.656873,1,0,Normal Traffic,0.57,Normal Traffic
